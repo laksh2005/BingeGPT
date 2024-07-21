@@ -1,15 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Header from "./Header";
 import { checkValidData } from "../utils/validate";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../utils/firebase";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { adduser } from "../utils/userSlice";
 
 const Login = () => {
 
   
   const [isSignInForm, setisSignInform] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+  const navigate= useNavigate(); //this function is used to navigate the user to /browse, when gets authenticated
+  const dispatch = useDispatch();
 
+  const name = useRef(null);
   const email = useRef(null);
   const password = useRef(null);
 
@@ -22,9 +28,12 @@ const Login = () => {
     if(message) return;
 //and below code works only when there is no message
   
+
+
       //Now do sign in/sign up
       //email n pass are valid
       //CREATING A NEW USER 
+
       if(!isSignInForm){
         //SIGN UP logic
         createUserWithEmailAndPassword(
@@ -35,8 +44,20 @@ const Login = () => {
           .then((userCredential) => {
           // Signed up 
         const user = userCredential.user;
-        console.log(user);  
-        // ...
+
+        updateProfile(user, {
+          displayName: name.current.value ,
+          photoURL: "https://avatars.githubusercontent.com/u/86841869?v=4"
+        })
+        .then(() => {
+          const {uid, email, displayName, photoURL}= auth.currentUser;
+          dispatch(adduser({uid: uid, email: email, displayName: displayName, photoURL: photoURL}));
+          navigate("/browse");
+        })
+        .catch((error) => {
+          setErrorMessage(error.message);
+        });
+
         })
         .catch((error) => {
           const errorCode = error.code;
@@ -47,6 +68,24 @@ const Login = () => {
 
       } else{
         //SIGN IN logic
+        signInWithEmailAndPassword(
+          auth,
+          email.current.value,
+          password.current.value
+        )
+          .then((userCredential) => {
+          // Signed in
+        const user = userCredential.user;
+        console.log(user);  
+        navigate("/browse");
+        // ...
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+          setErrorMessage(errorCode + "-" + errorMessage);
+          // ..
+        });
 
       }
     }
@@ -71,6 +110,7 @@ const Login = () => {
           
           {!isSignInForm && (
             <input
+            ref={name}
             type="text"
             placeholder="Full Name"
             className="p-4 my-2 w-full bg-gray-900 bg-opacity-80 text-white"
@@ -100,9 +140,9 @@ const Login = () => {
           <p className="text-red-700 font-bold text-lg p-2">{errorMessage}</p>
 
           <button 
-          className="p-4 my-6 bg-red-700 w-full"
+          className="p-4 my-6 bg-red-700 w-full hover:*:cursor-pointer"
           onClick={handleButtonClick}>
-            {isSignInForm ? "Sign In" : "Sign Up"}
+          {isSignInForm ? "Sign In" : "Sign Up"}
           </button>
 
           <p className="p-4" onClick={toggleSignInform}>{isSignInForm ? "New to Netflix? Sign Up now." : "Already a user? Sign In now."}</p>
