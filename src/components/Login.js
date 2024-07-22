@@ -3,16 +3,15 @@ import Header from "./Header";
 import { checkValidData } from "../utils/validate";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../utils/firebase";
-import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { adduser } from "../utils/userSlice";
+import { USERICON } from "../utils/constants";
 
 const Login = () => {
 
   
   const [isSignInForm, setisSignInform] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
-  const navigate= useNavigate(); //this function is used to navigate the user to /browse, when gets authenticated
   const dispatch = useDispatch();
 
   const name = useRef(null);
@@ -47,12 +46,11 @@ const Login = () => {
 
         updateProfile(user, {
           displayName: name.current.value ,
-          photoURL: "https://avatars.githubusercontent.com/u/86841869?v=4"
+          photoURL: USERICON,
         })
         .then(() => {
           const {uid, email, displayName, photoURL}= auth.currentUser;
           dispatch(adduser({uid: uid, email: email, displayName: displayName, photoURL: photoURL}));
-          navigate("/browse");
         })
         .catch((error) => {
           setErrorMessage(error.message);
@@ -76,8 +74,6 @@ const Login = () => {
           .then((userCredential) => {
           // Signed in
         const user = userCredential.user;
-        console.log(user);  
-        navigate("/browse");
         // ...
         })
         .catch((error) => {
